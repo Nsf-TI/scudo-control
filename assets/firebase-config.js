@@ -9,7 +9,7 @@
 // =====================================================
 
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAV903OChk4zXiQ_VFYBRhbWPMl8m4Zim8",
+  apiKey: "AIzaSyDhThMtzdrpBIeKpCEDCSQvRWg73IWxtQU",
   authDomain: "scudo-control.firebaseapp.com",
   projectId: "scudo-control",
   storageBucket: "scudo-control.firebasestorage.app",
