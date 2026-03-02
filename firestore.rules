@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Função auxiliar: usuário é membro do veículo ──────────
+    function isMember(vehicleId) {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/vehicles/$(vehicleId)) &&
+             (
+               get(/databases/$(database)/documents/vehicles/$(vehicleId)).data.ownerUid == request.auth.uid
+               ||
+               get(/databases/$(database)/documents/vehicles/$(vehicleId)).data.members[request.auth.uid] == true
+             );
+    }
+
+    // ── vehicles/{vehicleId} ──────────────────────────────────
+    match /vehicles/{vehicleId} {
+
+      // Criar veículo: usuário autenticado, define-se como owner
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.members[request.auth.uid] == true;
+
+      // Ler veículo: apenas membros
+      allow read: if isMember(vehicleId);
+
+      // Atualizar: apenas membros (state, members, etc.)
+      allow update: if isMember(vehicleId)
+                    // Impede alterar ownerUid
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['ownerUid']));
+
+      // Delete: apenas o owner
+      allow delete: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid;
+
+      // ── Subcoleções: fuel, manut, plano, gastos ──────────────
+      match /{subcol}/{docId} {
+        allow read, write: if isMember(vehicleId);
+      }
+    }
+
+    // Bloqueia tudo o mais
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
